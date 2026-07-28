@@ -1,0 +1,160 @@
+local P,R,U,T=game:GetService("Players"),game:GetService("RunService"),game:GetService("UserInputService"),game:GetService("TweenService")
+local L=P.LocalPlayer
+
+if _G.HB_CLEAN then _G.HB_CLEAN() end
+local conns={}
+
+local function C(s,f)
+    local c=s:Connect(f)
+    conns[#conns+1]=c
+end
+
+_G.HB_CLEAN=function()
+    for i=1,#conns do conns[i]:Disconnect() end
+    conns={}
+    local g=L:FindFirstChild("PlayerGui")
+    if g then local x=g:FindFirstChild("HB_GUI") if x then x:Destroy() end end
+end
+
+local function mk(t,p,par)
+    local o=Instance.new(t)
+    for k,v in pairs(p)do o[k]=v end
+    o.Parent=par
+    return o
+end
+
+local function round(o,r)
+    mk("UICorner",{CornerRadius=UDim.new(0,r)},o)
+end
+
+local function tw(o,p)
+    T:Create(o,TweenInfo.new(.12,Enum.EasingStyle.Linear),p):Play()
+end
+
+local gui=mk("ScreenGui",{Name="HB_GUI",ResetOnSpawn=false},L.PlayerGui)
+local main=mk("Frame",{Size=UDim2.new(0,260,0,150),Position=UDim2.new(0,16,.5,-75),BackgroundColor3=Color3.fromRGB(24,25,31),BorderSizePixel=0,Active=true},gui)
+round(main,10)
+
+local title=mk("Frame",{Size=UDim2.new(1,0,0,32),BackgroundTransparency=1},main)
+mk("TextLabel",{Size=UDim2.new(1,-10,1,0),Position=UDim2.new(0,8,0,0),BackgroundTransparency=1,Font=Enum.Font.GothamBold,TextSize=14,TextColor3=Color3.fromRGB(235,238,245),Text="Hitbox Extender",TextXAlignment=Enum.TextXAlignment.Left},title)
+mk("Frame",{Size=UDim2.new(1,-16,0,1),Position=UDim2.new(0,8,0,32),BackgroundColor3=Color3.fromRGB(58,62,75)},main)
+
+local function row(y,t)
+    mk("TextLabel",{Size=UDim2.new(1,-60,0,22),Position=UDim2.new(0,10,0,y),BackgroundTransparency=1,Font=Enum.Font.Gotham,TextSize=13,TextColor3=Color3.fromRGB(235,238,245),Text=t,TextXAlignment=Enum.TextXAlignment.Left},main)
+end
+
+local function switch(y,init,cb)
+    local onC=Color3.fromRGB(230,68,68)
+    local offC=Color3.fromRGB(84,88,102)
+    local b=mk("TextButton",{Size=UDim2.new(0,40,0,22),Position=UDim2.new(1,-50,0,y),BackgroundColor3=init and onC or offC,Text="",AutoButtonColor=false},main)
+    round(b,11)
+    local k=mk("Frame",{Size=UDim2.new(0,16,0,16),Position=init and UDim2.new(1,-19,.5,-8) or UDim2.new(0,3,.5,-8),BackgroundColor3=Color3.new(1,1,1)},b)
+    round(k,8)
+    local s=init
+    local function r()
+        tw(b,{BackgroundColor3=s and onC or offC})
+        tw(k,{Position=s and UDim2.new(1,-19,.5,-8) or UDim2.new(0,3,.5,-8)})
+    end
+    C(b.MouseButton1Click,function()
+        s=not s
+        r()
+        cb(s)
+    end)
+end
+
+local enabled=false
+local visible=true
+local size=5
+local originals={}
+local HB_COLOR=Color3.fromRGB(255,40,40)
+
+local function store(h)
+    if originals[h] then return end
+    originals[h]={h.Size,h.Transparency,h.Color,h.CanCollide,h.Massless}
+end
+
+local function restore()
+    for h,o in pairs(originals)do
+        if h and h.Parent then
+            h.Size=o[1] h.Transparency=o[2] h.Color=o[3]
+            h.CanCollide=o[4] h.Massless=o[5]
+        end
+    end
+    originals={}
+end
+
+row(40,"Enable hitbox extender")
+switch(40,false,function(on)
+    enabled=on
+    if not on then restore() end
+end)
+
+row(70,"Show box (25%)")
+switch(70,true,function(on)
+    visible=on
+end)
+
+row(100,"Size (1-10)")
+local box=mk("TextBox",{Size=UDim2.new(0,78,0,24),Position=UDim2.new(1,-90,0,98),BackgroundColor3=Color3.fromRGB(41,44,54),Font=Enum.Font.Gotham,TextSize=13,TextColor3=Color3.fromRGB(235,238,245),Text="5",ClearTextOnFocus=false},main)
+round(box,6)
+C(box.FocusLost,function()
+    local n=tonumber(box.Text)
+    if n then size=math.clamp(n,1,10) end
+    box.Text=size
+end)
+
+local v75=.75
+
+C(R.Heartbeat,function()
+    if not enabled then return end
+    local s=Vector3.new(size,size,size)
+    local tp=visible and v75 or 1
+    local list=P:GetPlayers()
+    for i=1,#list do
+        local p=list[i]
+        if p~=L then
+            local h=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+            if h then
+                store(h)
+                h.Size=s
+                h.CanCollide=false
+                h.Transparency=tp
+                h.Color=HB_COLOR
+            end
+        end
+    end
+end)
+
+title.Active=true
+local dragging=false
+local dragStart
+local guiStart
+
+C(title.InputBegan,function(i)
+    if i.UserInputType==Enum.UserInputType.MouseButton1 then
+        dragging=true
+        dragStart=U:GetMouseLocation()
+        guiStart=main.AbsolutePosition
+        pcall(function()i:CaptureMouse()end)
+    end
+end)
+
+C(U.InputChanged,function(i)
+    if dragging and i.UserInputType==Enum.UserInputType.MouseMovement then
+        local d=U:GetMouseLocation()-dragStart
+        main.Position=UDim2.new(0,guiStart.X+d.X,0,guiStart.Y+d.Y)
+    end
+end)
+
+C(U.InputEnded,function(i)
+    if i.UserInputType==Enum.UserInputType.MouseButton1 then
+        dragging=false
+        pcall(function()i:ReleaseMouse()end)
+    end
+end)
+
+local unload=mk("TextButton",{Size=UDim2.new(0,60,0,20),Position=UDim2.new(1,-70,0,8),BackgroundColor3=Color3.fromRGB(230,68,68),Font=Enum.Font.GothamMedium,TextSize=11,TextColor3=Color3.new(1,1,1),Text="Unload"},main)
+round(unload,5)
+C(unload.MouseButton1Click,function()
+    if _G.HB_CLEAN then _G.HB_CLEAN() end
+end)
