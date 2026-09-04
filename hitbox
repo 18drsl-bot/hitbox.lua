@@ -94,12 +94,12 @@ switch(70,true,function(on)
     visible=on
 end)
 
-row(100,"Size (1-10)")
+row(100,"Size (1-100)")
 local box=mk("TextBox",{Size=UDim2.new(0,78,0,24),Position=UDim2.new(1,-90,0,98),BackgroundColor3=Color3.fromRGB(41,44,54),Font=Enum.Font.Gotham,TextSize=13,TextColor3=Color3.fromRGB(235,238,245),Text="5",ClearTextOnFocus=false},main)
 round(box,6)
 C(box.FocusLost,function()
     local n=tonumber(box.Text)
-    if n then size=math.clamp(n,1,10) end
+    if n then size=math.clamp(n,1,100) end
     box.Text=size
 end)
 
