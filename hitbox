@@ -70,7 +70,7 @@ local function tw(o, p)
     ):Play()
 end
 
--- CoreGui GUI
+-- CoreGui
 local gui = mk("ScreenGui", {
     Name = "HB_GUI",
     ResetOnSpawn = false
@@ -149,7 +149,9 @@ local function switch(y, init, cb)
 
     local s = init
 
-    local function update()
+    C(b.MouseButton1Click, function()
+        s = not s
+
         tw(b, {
             BackgroundColor3 = s and onC or offC
         })
@@ -159,11 +161,7 @@ local function switch(y, init, cb)
                 and UDim2.new(1, -19, .5, -8)
                 or UDim2.new(0, 3, .5, -8)
         })
-    end
 
-    C(b.MouseButton1Click, function()
-        s = not s
-        update()
         cb(s)
     end)
 end
@@ -173,7 +171,6 @@ local enabled = false
 local visible = true
 local size = 5
 local HB_COLOR = Color3.fromRGB(255, 40, 40)
-local v75 = .75
 
 local function store(h)
     if originals[h] then
@@ -189,26 +186,25 @@ local function store(h)
     }
 end
 
--- Enable Toggle
+-- Enable
 row(40, "Enable hitbox extender")
 
 switch(40, false, function(on)
     enabled = on
-
     if not on then
         restore()
     end
 end)
 
--- Visibility Toggle
+-- Visibility
 row(70, "Show box (25%)")
 
 switch(70, true, function(on)
     visible = on
 end)
 
--- Size Input
-row(100, "Size (1-100)")
+-- Size 1-1000
+row(100, "Size (1-1000)")
 
 local box = mk("TextBox", {
     Size = UDim2.new(0, 78, 0, 24),
@@ -227,26 +223,22 @@ C(box.FocusLost, function()
     local n = tonumber(box.Text)
 
     if n then
-        size = math.clamp(n, 1, 100)
+        size = math.clamp(n, 1, 1000)
     end
 
     box.Text = tostring(size)
 end)
 
--- Hitbox Update
+-- Hitbox Loop
 C(R.Heartbeat, function()
     if not enabled then
         return
     end
 
     local s = Vector3.new(size, size, size)
-    local tp = visible and v75 or 1
+    local tp = visible and .75 or 1
 
-    local list = P:GetPlayers()
-
-    for i = 1, #list do
-        local p = list[i]
-
+    for _, p in ipairs(P:GetPlayers()) do
         if p ~= L then
             local h = p.Character
                 and p.Character:FindFirstChild("HumanoidRootPart")
@@ -263,7 +255,7 @@ C(R.Heartbeat, function()
     end
 end)
 
--- Draggable Window
+-- Dragging
 title.Active = true
 
 local dragging = false
@@ -299,7 +291,7 @@ C(U.InputEnded, function(i)
     end
 end)
 
--- Unload Button
+-- Unload
 local unload = mk("TextButton", {
     Size = UDim2.new(0, 60, 0, 20),
     Position = UDim2.new(1, -70, 0, 8),
